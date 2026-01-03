@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -20,18 +20,19 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create Android Project Structure
+      - name: Create Android Project
         run: |
           mkdir -p realityos/app/src/main/java/com/sabir552/realityos
           mkdir -p realityos/app/src/main/res
-          mkdir -p realityos/gradle
           cd realityos
 
+          # Root settings
           cat > settings.gradle <<EOF
-          include ':app'
           rootProject.name = "RealityOS"
+          include(":app")
           EOF
 
+          # Root build.gradle
           cat > build.gradle <<EOF
           buildscript {
               repositories {
@@ -52,14 +53,16 @@ jobs:
           }
           EOF
 
+          # gradle.properties
           cat > gradle.properties <<EOF
-          org.gradle.jvmargs=-Xmx2g
+          org.gradle.jvmargs=-Xmx2048m
           android.useAndroidX=true
           EOF
 
+          # App build.gradle
           cat > app/build.gradle <<EOF
-          apply plugin: 'com.android.application'
-          apply plugin: 'kotlin-android'
+          apply plugin: "com.android.application"
+          apply plugin: "kotlin-android"
 
           android {
               namespace "com.sabir552.realityos"
@@ -77,6 +80,7 @@ jobs:
           dependencies {}
           EOF
 
+          # AndroidManifest
           cat > app/src/main/AndroidManifest.xml <<EOF
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               package="com.sabir552.realityos">
@@ -95,6 +99,7 @@ jobs:
           </manifest>
           EOF
 
+          # MainActivity
           cat > app/src/main/java/com/sabir552/realityos/MainActivity.kt <<EOF
           package com.sabir552.realityos
 
@@ -108,9 +113,15 @@ jobs:
           }
           EOF
 
+      - name: Generate Gradle Wrapper
+        run: |
+          cd realityos
+          gradle wrapper --gradle-version 8.2 --distribution-type all
+
       - name: Build Debug APK
         run: |
           cd realityos
+          chmod +x gradlew
           ./gradlew assembleDebug
 
       - name: Upload APK
