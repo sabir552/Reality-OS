@@ -20,41 +20,57 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create Android Project
+      - name: Create Android Project Structure
         run: |
-          mkdir realityos
+          mkdir -p realityos/app/src/main/java/com/sabir552/realityos
+          mkdir -p realityos/app/src/main/res
+          mkdir -p realityos/gradle
           cd realityos
-          gradle init \
-            --type basic \
-            --dsl kotlin \
-            --project-name RealityOS \
-            --package com.sabir552.realityos
 
-          mkdir -p app/src/main/java/com/sabir552/realityos
-          mkdir -p app/src/main/res/layout
-          mkdir -p app/src/main/res/values
-
-          cat > settings.gradle.kts <<EOF
+          cat > settings.gradle <<EOF
+          include ':app'
           rootProject.name = "RealityOS"
-          include(":app")
           EOF
 
-          cat > app/build.gradle.kts <<EOF
-          plugins {
-              id("com.android.application")
-              kotlin("android")
+          cat > build.gradle <<EOF
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath "com.android.tools.build:gradle:8.2.2"
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
+              }
           }
 
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+
+          cat > gradle.properties <<EOF
+          org.gradle.jvmargs=-Xmx2g
+          android.useAndroidX=true
+          EOF
+
+          cat > app/build.gradle <<EOF
+          apply plugin: 'com.android.application'
+          apply plugin: 'kotlin-android'
+
           android {
-              namespace = "com.sabir552.realityos"
-              compileSdk = 34
+              namespace "com.sabir552.realityos"
+              compileSdk 34
 
               defaultConfig {
-                  applicationId = "com.sabir552.realityos"
-                  minSdk = 26
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0"
+                  applicationId "com.sabir552.realityos"
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
               }
           }
 
@@ -64,6 +80,7 @@ jobs:
           cat > app/src/main/AndroidManifest.xml <<EOF
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               package="com.sabir552.realityos">
+
               <application
                   android:label="Reality OS"
                   android:exported="true">
@@ -74,6 +91,7 @@ jobs:
                       </intent-filter>
                   </activity>
               </application>
+
           </manifest>
           EOF
 
