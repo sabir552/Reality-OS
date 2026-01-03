@@ -14,25 +14,89 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: 17
 
-      - name: Install Android SDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Create Android Project
         run: |
-          mkdir app
-          cd app
-          curl -s https://raw.githubusercontent.com/sabir552/realityos-bootstrap/main/bootstrap.sh | bash
+          mkdir realityos
+          cd realityos
+          gradle init \
+            --type basic \
+            --dsl kotlin \
+            --project-name RealityOS \
+            --package com.sabir552.realityos
+
+          mkdir -p app/src/main/java/com/sabir552/realityos
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+
+          cat > settings.gradle.kts <<EOF
+          rootProject.name = "RealityOS"
+          include(":app")
+          EOF
+
+          cat > app/build.gradle.kts <<EOF
+          plugins {
+              id("com.android.application")
+              kotlin("android")
+          }
+
+          android {
+              namespace = "com.sabir552.realityos"
+              compileSdk = 34
+
+              defaultConfig {
+                  applicationId = "com.sabir552.realityos"
+                  minSdk = 26
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+          }
+
+          dependencies {}
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<EOF
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.sabir552.realityos">
+              <application
+                  android:label="Reality OS"
+                  android:exported="true">
+                  <activity android:name=".MainActivity">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/com/sabir552/realityos/MainActivity.kt <<EOF
+          package com.sabir552.realityos
+
+          import android.os.Bundle
+          import androidx.activity.ComponentActivity
+
+          class MainActivity : ComponentActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+              }
+          }
+          EOF
 
       - name: Build Debug APK
         run: |
-          cd app
+          cd realityos
           ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: RealityOS-debug-apk
-          path: app/app/build/outputs/apk/debug/app-debug.apk
+          path: realityos/app/build/outputs/apk/debug/app-debug.apk
