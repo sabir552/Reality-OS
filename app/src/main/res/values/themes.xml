@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
   <!-- Base application theme. -->
-  <style name="Theme.RealityOS" parent="Theme.Material3.Dark.NoActionBar">
-    <!-- Customize your dark theme here. -->
-    <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+  <style name="Theme.RealityOS" parent="Theme.Material3.Dark">
+    <!-- We inherit from the base Material 3 Dark theme -->
   </style>
 </resources>
