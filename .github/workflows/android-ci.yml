@@ -2,13 +2,13 @@ name: Android CI Build
 
 on:
   push:
-    branches: [ "main" ] # This workflow runs every time you push to the main branch
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Use a standard Linux runner
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
@@ -23,25 +23,18 @@ jobs:
 
     - name: Decode Keystore
       run: |
-        echo "${{ secrets.SIGNING_KEY_STORE_BASE64 }}" | base64 --decode > keystore.jks
-      # This command reads the secret, decodes it, and creates the keystore.jks file for the build.
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-      # The gradlew file needs to be executable.
+        echo "${{ secrets.SIGNING_KEY_STORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/keystore.jks
 
     - name: Build with Gradle
-      env: # Make the secrets available as environment variables for the build script
+      env:
         SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
         SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         SIGNING_KEY_PRIVATE_PASSWORD: ${{ secrets.SIGNING_KEY_PRIVATE_PASSWORD }}
       run: ./gradlew assembleRelease
-      # This is the command that builds the release version of your app (an APK).
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: reality-os-apk # The name of the downloadable file
+        name: reality-os-apk
         path: app/build/outputs/apk/release/app-release.apk
-        # The path to where the final APK is located after the build.
         
