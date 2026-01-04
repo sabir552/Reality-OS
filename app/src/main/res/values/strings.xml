@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Reality OS</string>
+    <string name="accessibility_service_description">Reality OS requires this permission to monitor app usage and enforce your self-defined rules by applying punishments like screen greyscaling or app blocking. Your data is kept private on your device.</string>
+</resources>
