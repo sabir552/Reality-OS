@@ -28,47 +28,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-    }
-// In app/build.gradle.kts
-
-android {
-    namespace = "com.realityos.realityos"
-    compileSdk = 34
-
-    defaultConfig {
-        // ... existing config ...
-    }
-
-    // ▼▼▼ ADD THIS ENTIRE BLOCK ▼▼▼
-    signingConfigs {
-        create("release") {
-            // You can also use a file if you prefer
-            val keystoreFile = project.rootProject.file("keystore.jks")
-            if (keystoreFile.exists()) {
-                 storeFile = keystoreFile
-                 storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-                 keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-                 keyPassword = System.getenv("SIGNING_KEY_PRIVATE_PASSWORD")
-            }
-        }
-    }
-    // ▲▲▲ END OF BLOCK TO ADD ▲▲▲
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            // And add this line to link the signing config
             signingConfig = signingConfigs.getByName("release")
         }
     }
-    // ... rest of the file ...
-}
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -80,47 +42,63 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.7"
+        // This is the critical fix. This version is compatible with the latest Compose BOM.
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        create("release") {
+            val keystoreFile = project.rootProject.file("keystore.jks")
+            if (keystoreFile.exists()) {
+                 storeFile = keystoreFile
+                 storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                 keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                 keyPassword = System.getenv("SIGNING_KEY_PRIVATE_PASSWORD")
+            }
+        }
+    }
 }
 
 dependencies {
 
-    // Core & UI (with explicit versions)
-implementation("androidx.core:core-ktx:1.12.0")
-implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-implementation("androidx.activity:activity-compose:1.8.1")
-implementation("androidx.compose.ui:ui:1.5.4")
-implementation("androidx.compose.ui:ui-graphics:1.5.4")
-implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
-implementation("androidx.compose.material3:material3:1.1.2") // Note this specific version
-implementation("androidx.navigation:navigation-compose:2.7.6")
+    // Use the Compose Bill of Materials (BOM) to ensure all Compose libraries are compatible.
+    // This is the recommended approach.
+    implementation(platform("androidx.compose:compose-bom:2024.01.00"))
 
-// Room
-implementation("androidx.room:room-runtime:2.6.1")
-implementation("androidx.room:room-ktx:2.6.1")
-ksp("androidx.room:room-compiler:2.6.1")
+    // Core & UI libraries (no versions needed; they are managed by the BOM)
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3") // The source of our theme
+    implementation("androidx.navigation:navigation-compose")
 
-// WorkManager
-implementation("androidx.work:work-runtime-ktx:2.9.0")
+    // Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
-// ViewModel
-implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-// Google Play Billing
-implementation("com.android.billingclient:billing-ktx:6.1.0")
+    // ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose")
 
-// Testing (no changes needed here)
-testImplementation("junit:junit:4.13.2")
-androidTestImplementation("androidx.test.ext:junit:1.1.5")
-androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.4") // Also specify version here
-debugImplementation("androidx.compose.ui:ui-tooling:1.5.4") // And here
-debugImplementation("androidx.compose.ui:ui-test-manifest:1.5.4") // And here
+    // Google Play Billing
+    implementation("com.android.billingclient:billing-ktx:6.1.0")
 
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.01.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
