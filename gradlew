@@ -115,7 +115,7 @@ if ! $cygwin && ! $msys ; then
             # Use the system hard limit
             MAX_FD="$MAX_FD_LIMIT"
         fi
-        ulimit -n $MAX_FD
+        ulimit -n "$MAX_FD"
         if [ $? -ne 0 ] ; then
             warn "Could not set maximum file descriptor limit: $MAX_FD"
         fi
@@ -135,75 +135,11 @@ if $cygwin ; then
     CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
 fi
 
-# Split up the JVM options only if the JAVA_OPTS variable is not defined.
-if [ -z "$JAVA_OPTS" ]; then
-    JAVA_OPTS=($DEFAULT_JVM_OPTS)
-fi
-
-# Split up the Gradle options only if the GRADLE_OPTS variable is not defined.
-if [ -z "$GRADLE_OPTS" ]; then
-    GRADLE_OPTS=()
-fi
-
-# Collect all arguments for the java command, following the shell quoting and substitution rules
-#
-# (The nested-quoting technique is based on https://stackoverflow.com/a/13253245/227503)
-#
-# The purpose of this step is to handle the case where one of the arguments is a Gradle property definition
-# that contains a space, e.g. "-Dmy.prop=a value".  If we don't do this, the shell will split
-# the argument into two parts, which is not what we want.
-#
-# This is not 100% bulletproof, as it assumes that the user is not defining a property value that contains
-# a quote character.  That's a reasonable assumption, though.
-#
-eval set -- "$(
-    printf '%q ' "$JAVACMD" "${JAVA_OPTS[@]}" -Dorg.gradle.appname="$APP_BASE_NAME"
-    printf '-Dorg.gradle.internal.wrapper.script_path=%q ' "$0"
-    printf '%q ' "${GRADLE_OPTS[@]}" "$@"
-)"
-
-# This is the magic bit that will be reported in the ProcessEnvironment.
-# It makes it possible for the daemon to know how it was launched.
-#
-# This is passed as a system property, rather than an environment variable,
-# because the command line of a running process is available to all users on a
-# multi-user system.  We don't want to expose potentially sensitive
-# information included in the GRADLE_OPTS environment variable.
-#
-# In order to avoid any shell quoting issues, we resort to the following trick:
-#   - create a temporary file
-#   - write the name of the file to a well-known environment variable
-#   - write the original command line to the file
-#   - delete the file in an exit trap
-#
-# See also: https://github.com/gradle/gradle/issues/15082
-#
-if [ -z "$GRADLE_ORIGINAL_COMMAND_STRING" ]; then
-    # Using a file under /tmp is not ideal, but it is the most cross-platform solution.
-    # We could use mktemp, but that is not available on all systems.
-    # We could use a file in the user's home directory, but that is not always available.
-    #
-    # We use a file name that is unlikely to be used by any other process.
-    # We use a trap to delete the file on exit.
-    # We do not use a random file name, because we want to be able to find the file
-    # in the case where the trap is not executed for some reason.
-    #
-    GRADLE_ENV_FILE="/tmp/gradle-original-command-$$.env"
-
-    # The command string is a single line, so we can use printf.
-    # The file has to be written in the platform's default encoding.
-    #
-    printf "%s" "$*" > "$GRADLE_ENV_FILE"
-    export GRADLE_ENV_FILE
-
-    # Ensure that the file is deleted on exit.
-    #
-    # This is not 100% bulletproof, as it assumes that the shell will execute the trap.
-    #
-    trap 'rm -f "$GRADLE_ENV_FILE" "$GRADLE_ENV_FILE.lock"' EXIT
+# Set the default JVM options, if not already set.
+if [ -z "$JAVA_OPTS" ] ; then
+    JAVA_OPTS="$DEFAULT_JVM_OPTS"
 fi
 
 # Start the Gradle wrapper
 #
-exec "$@"
-
+exec "$JAVACMD" $JAVA_OPTS $GRADLE_OPTS -Dorg.gradle.appname="$APP_BASE_NAME" -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"
