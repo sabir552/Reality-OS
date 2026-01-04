@@ -1,6 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-  <!-- Base application theme. -->
-  <style name="Theme.RealityOS" parent="Theme.Material3.Dark">
-    <!-- We inherit from the base Material 3 Dark theme -->
+  <!--
+    This is a temporary diagnostic theme.
+    It inherits from a basic system theme to test if the build can pass
+    without referencing the Material 3 library's theme resource.
+  -->
+  <style name="Theme.RealityOS" parent="android:Theme.DeviceDefault.NoActionBar">
   </style>
 </resources>
