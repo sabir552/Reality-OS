@@ -8,7 +8,6 @@ android {
     namespace = "com.realityos.realityos"
     compileSdk = 34
 
-    // THIS BLOCK IS NOW MOVED UP
     signingConfigs {
         create("release") {
             val keystoreFile = project.rootProject.file("keystore.jks")
@@ -41,7 +40,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // This line can now successfully find the 'release' signingConfig
             signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -75,7 +73,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.navigation:navigation-compose")
+    // THIS LINE IS NOW CORRECTED WITH THE VERSION NUMBER
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
