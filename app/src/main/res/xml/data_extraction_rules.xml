@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- For more information about the backup files, see
+         https://developer.android.com/guide/topics/data/autobackup -->
+        <exclude domain="database" path="reality_os_database.db"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="reality_os_database.db"/>
+    </device-transfer>
+</data-extraction-rules>
+      
