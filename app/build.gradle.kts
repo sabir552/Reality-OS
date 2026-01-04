@@ -30,6 +30,45 @@ android {
             )
         }
     }
+// In app/build.gradle.kts
+
+android {
+    namespace = "com.realityos.realityos"
+    compileSdk = 34
+
+    defaultConfig {
+        // ... existing config ...
+    }
+
+    // ▼▼▼ ADD THIS ENTIRE BLOCK ▼▼▼
+    signingConfigs {
+        create("release") {
+            // You can also use a file if you prefer
+            val keystoreFile = project.rootProject.file("keystore.jks")
+            if (keystoreFile.exists()) {
+                 storeFile = keystoreFile
+                 storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                 keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                 keyPassword = System.getenv("SIGNING_KEY_PRIVATE_PASSWORD")
+            }
+        }
+    }
+    // ▲▲▲ END OF BLOCK TO ADD ▲▲▲
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            // And add this line to link the signing config
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+    // ... rest of the file ...
+}
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
