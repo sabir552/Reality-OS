@@ -8,6 +8,19 @@ android {
     namespace = "com.realityos.realityos"
     compileSdk = 34
 
+    // THIS BLOCK IS NOW MOVED UP
+    signingConfigs {
+        create("release") {
+            val keystoreFile = project.rootProject.file("keystore.jks")
+            if (keystoreFile.exists()) {
+                 storeFile = keystoreFile
+                 storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                 keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                 keyPassword = System.getenv("SIGNING_KEY_PRIVATE_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.realityos.realityos"
         minSdk = 26
@@ -28,6 +41,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // This line can now successfully find the 'release' signingConfig
             signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -42,7 +56,6 @@ android {
         compose = true
     }
     composeOptions {
-        // This is the critical fix. This version is compatible with the latest Compose BOM.
         kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
@@ -50,50 +63,30 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    signingConfigs {
-        create("release") {
-            val keystoreFile = project.rootProject.file("keystore.jks")
-            if (keystoreFile.exists()) {
-                 storeFile = keystoreFile
-                 storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-                 keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-                 keyPassword = System.getenv("SIGNING_KEY_PRIVATE_PASSWORD")
-            }
-        }
-    }
 }
 
 dependencies {
-
-    // Use the Compose Bill of Materials (BOM) to ensure all Compose libraries are compatible.
-    // This is the recommended approach.
     implementation(platform("androidx.compose:compose-bom:2024.01.00"))
 
-    // Core & UI libraries (no versions needed; they are managed by the BOM)
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3") // The source of our theme
+    implementation("androidx.compose.material3:material3")
     implementation("androidx.navigation:navigation-compose")
 
-    // Room
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
-    // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-    // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose")
 
-    // Google Play Billing
     implementation("com.android.billingclient:billing-ktx:6.1.0")
 
-    // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
