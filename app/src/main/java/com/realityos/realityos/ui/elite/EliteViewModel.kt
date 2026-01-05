@@ -49,7 +49,8 @@ class EliteViewModel(
 
         billingClient.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
-                if (billingResult.responseCode == BillingClient.BillingResponseC.OK) {
+                // THIS IS THE CORRECTED LINE
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     Log.d("EliteViewModel", "Billing client setup finished.")
                     queryProductDetails()
                     queryPurchases()
@@ -170,6 +171,6 @@ data class EliteUiState(
     val isQualified: Boolean = false,
     val isElite: Boolean = false,
     val isLoading: Boolean = false,
-    val productDetails: ProductDetails? = null, // Changed from SkuDetails
+    val productDetails: ProductDetails? = null,
     val message: String? = null
 )
