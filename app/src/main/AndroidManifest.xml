@@ -14,13 +14,11 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.RealityOS"
         tools:targetApi="31">
 
-        <!-- YEH HISSA SABSE ZAROORI HAI (THIS PART IS THE MOST IMPORTANT) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -44,7 +42,6 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <!-- Yeh WorkManager ki problem ko theek karta hai -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
@@ -54,3 +51,4 @@
     </application>
 
 </manifest>
+            
