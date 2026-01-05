@@ -1,9 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-  <!--
-    This is a temporary diagnostic theme.
-    It inherits from a basic system theme to test if the build can pass
-    without referencing the Material 3 library's theme resource.
-  -->
-  <style name="Theme.RealityOS" parent="android:Theme.DeviceDefault.NoActionBar">
+  <!-- Base application theme. -->
+  <style name="Theme.RealityOS" parent="Theme.Material3.Dark.NoActionBar">
+    <!-- All UI will be handled by Jetpack Compose from this point. -->
   </style>
 </resources>
