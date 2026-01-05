@@ -12,12 +12,12 @@ import com.realityos.realityos.data.repository.RealityOSRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-private const val ELITE_SKU = "reality_os_elite_commitment" // Your Product ID from Play Console
+private const val ELITE_PRODUCT_ID = "reality_os_elite_commitment" // Your Product ID from Play Console
 
 class EliteViewModel(
     application: Application,
     private val repository: RealityOSRepository,
-    private val savedStateHandle: SavedStateHandle // Used to survive process death
+    private val savedStateHandle: SavedStateHandle
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(EliteUiState())
@@ -49,42 +49,43 @@ class EliteViewModel(
 
         billingClient.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                if (billingResult.responseCode == BillingClient.BillingResponseC.OK) {
                     Log.d("EliteViewModel", "Billing client setup finished.")
-                    querySkuDetails()
-                    queryPurchases() // Check for existing purchases
+                    queryProductDetails()
+                    queryPurchases()
                 } else {
                      _uiState.update { it.copy(message = "Error connecting to billing service.") }
                 }
             }
             override fun onBillingServiceDisconnected() {
-                // Retry connection
                 Log.d("EliteViewModel", "Billing service disconnected.")
             }
         })
     }
 
-    private fun querySkuDetails() {
-         val skuList = listOf(ELITE_SKU)
-         val params = SkuDetailsParams.newBuilder()
-            .setSkusList(skuList)
-            .setType(BillingClient.SkuType.INAPP)
-            .build()
+    private fun queryProductDetails() {
+         val productList = listOf(
+             QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(ELITE_PRODUCT_ID)
+                .setProductType(BillingClient.ProductType.INAPP)
+                .build()
+         )
+         val params = QueryProductDetailsParams.newBuilder().setProductList(productList)
 
-        billingClient.querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && skuDetailsList != null) {
-                val eliteSku = skuDetailsList.firstOrNull { it.sku == ELITE_SKU }
-                _uiState.update { it.copy(skuDetails = eliteSku) }
+        billingClient.queryProductDetailsAsync(params.build()) { billingResult, productDetailsList ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && productDetailsList.isNotEmpty()) {
+                val eliteProductDetails = productDetailsList.first()
+                _uiState.update { it.copy(productDetails = eliteProductDetails) }
             }
         }
     }
-    
-    // Check for existing elite purchases on startup
+
     private fun queryPurchases() {
-        billingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP) { billingResult, purchases ->
+        val params = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP)
+        billingClient.queryPurchasesAsync(params.build()) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 purchases.forEach { purchase ->
-                    if (purchase.skus.contains(ELITE_SKU) && purchase.purchaseState == Purchase.PurchaseState.PURCHASED && !purchase.isAcknowledged) {
+                    if (purchase.products.contains(ELITE_PRODUCT_ID) && purchase.purchaseState == Purchase.PurchaseState.PURCHASED && !purchase.isAcknowledged) {
                         viewModelScope.launch { handlePurchase(purchase) }
                     }
                 }
@@ -95,7 +96,6 @@ class EliteViewModel(
     private fun checkQualification() {
         viewModelScope.launch {
             repository.getUser().first()?.let { user ->
-                // Example logic: 30-day streak, 10000 XP, no breaks
                 val qualified = user.streak >= 30 && user.xp >= 10000 && !user.hasBrokenCommitment && user.commitmentLevel != "ELITE"
                 _uiState.update { it.copy(isQualified = qualified) }
             }
@@ -103,11 +103,17 @@ class EliteViewModel(
     }
 
     fun launchBillingFlow(activity: Activity) {
-        val skuDetails = uiState.value.skuDetails ?: return
-        val flowParams = BillingFlowParams.newBuilder()
-            .setSkuDetails(skuDetails)
+        val productDetails = uiState.value.productDetails ?: return
+        val productDetailsParamsList = listOf(
+            BillingFlowParams.ProductDetailsParams.newBuilder()
+                .setProductDetails(productDetails)
+                .build()
+        )
+        val billingFlowParams = BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(productDetailsParamsList)
             .build()
-        val responseCode = billingClient.launchBillingFlow(activity, flowParams).responseCode
+
+        val responseCode = billingClient.launchBillingFlow(activity, billingFlowParams).responseCode
         if (responseCode != BillingClient.BillingResponseCode.OK) {
              _uiState.update { it.copy(message = "Failed to launch purchase flow.") }
         } else {
@@ -123,12 +129,10 @@ class EliteViewModel(
                     .build()
                 billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult ->
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                         // Acknowledged, now grant entitlement
                          grantEliteEntitlement()
                     }
                 }
             } else {
-                // Already acknowledged, just ensure entitlement is granted
                 grantEliteEntitlement()
             }
         } else if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
@@ -149,7 +153,6 @@ class EliteViewModel(
                   )
                   _uiState.update { it.copy(isLoading = false, message = "Elite Commitment Unlocked!", isElite = true) }
              } else {
-                 // User is already elite or doesn't exist, handle silently
                  _uiState.update { it.copy(isLoading = false, isElite = true) }
              }
         }
@@ -167,6 +170,6 @@ data class EliteUiState(
     val isQualified: Boolean = false,
     val isElite: Boolean = false,
     val isLoading: Boolean = false,
-    val skuDetails: SkuDetails? = null,
+    val productDetails: ProductDetails? = null, // Changed from SkuDetails
     val message: String? = null
 )
