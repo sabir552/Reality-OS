@@ -21,8 +21,29 @@ class EnforcementWorker(
 
     override suspend fun doWork(): Result {
         Log.d("EnforcementWorker", "Worker starting...")
-        val rules = repository.getRules().first()
         val usageStatsManager = applicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        
+        // This is the current app the user is looking at
+        val foregroundApp = RealityAccessibilityService.currentForegroundApp.value
+
+        // If no app is in the foreground, turn off all punishments and exit
+        if (foregroundApp == null) {
+            RealityAccessibilityService.isGreyscaleActive.value = false
+            RealityAccessibilityService.isBlockActive.value = false
+            return Result.success()
+        }
+        
+        // Get the specific rule for the foreground app, if it exists
+        val ruleForApp = repository.getRules().first().find { it.targetAppPackageName == foregroundApp }
+
+        // If there's no rule for this app, turn off all punishments and exit
+        if (ruleForApp == null) {
+            RealityAccessibilityService.isGreyscaleActive.value = false
+            RealityAccessibilityService.isBlockActive.value = false
+            return Result.success()
+        }
+
+        // --- If we get here, there IS a rule for the current app ---
 
         val calendar = Calendar.getInstance()
         val endTime = calendar.timeInMillis
@@ -31,71 +52,50 @@ class EnforcementWorker(
         calendar.set(Calendar.SECOND, 0)
         val startTime = calendar.timeInMillis
 
-        try {
-            rules.forEach { rule ->
-                val usageStats = usageStatsManager.queryUsageStats(
-                    UsageStatsManager.INTERVAL_DAILY,
-                    startTime,
-                    endTime
-                )
-                val appUsage = usageStats
-                    .firstOrNull { it.packageName == rule.targetAppPackageName }
-                    ?.totalTimeInForeground ?: 0L
+        // Get today's usage for this specific app
+        val appUsage = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+            .firstOrNull { it.packageName == foregroundApp }
+            ?.totalTimeInForeground ?: 0L
+        
+        val usageMinutes = appUsage / (1000 * 60)
+        val timeLimitMinutes = ruleForApp.timeLimitMinutes
 
-                val usageMinutes = appUsage / (1000 * 60)
+        Log.d("EnforcementWorker", "Checking rule for $foregroundApp. Usage: $usageMinutes min. Limit: $timeLimitMinutes min.")
 
-                Log.d("EnforcementWorker", "Checking rule for ${rule.targetAppPackageName}. Usage: $usageMinutes min. Limit: ${rule.timeLimitMinutes} min.")
-
-                val currentForegroundApp = RealityAccessibilityService.currentForegroundApp.value
-                if (currentForegroundApp == rule.targetAppPackageName && usageMinutes >= rule.timeLimitMinutes) {
-                    applyPunishment(rule.punishmentType, rule.targetAppPackageName)
-                } else {
-                    // Check if a punishment is active for an app that is no longer in the foreground
-                    // or if usage is back within limits (though this shouldn't happen without a reset)
-                    if (currentForegroundApp != rule.targetAppPackageName) {
-                        removePunishmentIfNeeded(rule.punishmentType)
+        // If usage has exceeded the limit
+        if (usageMinutes >= timeLimitMinutes) {
+            // Apply the correct punishment and turn off the other one
+            when (ruleForApp.punishmentType) {
+                "GRAYSCALE" -> {
+                    if (!RealityAccessibilityService.isGreyscaleActive.value) {
+                        logPunishment("GRAYSCALE", foregroundApp)
                     }
+                    RealityAccessibilityService.isGreyscaleActive.value = true
+                    RealityAccessibilityService.isBlockActive.value = false
+                }
+                "BLOCK" -> {
+                    if (!RealityAccessibilityService.isBlockActive.value) {
+                        logPunishment("BLOCK", foregroundApp)
+                    }
+                    RealityAccessibilityService.isBlockActive.value = true
+                    RealityAccessibilityService.isGreyscaleActive.value = false
                 }
             }
-             // If no rules are violated for the current app, ensure no punishments are active
-            val currentApp = RealityAccessibilityService.currentForegroundApp.value
-            val isCurrentAppPunished = rules.any { it.targetAppPackageName == currentApp && ( (usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
-                .firstOrNull { stats -> stats.packageName == it.targetAppPackageName }?.totalTimeInForeground ?: 0) / (1000 * 60) >= it.timeLimitMinutes ) }
-
-            if (!isCurrentAppPunished) {
-                 RealityAccessibilityService.isGreyscaleActive.value = false
-                 RealityAccessibilityService.isBlockActive.value = false
-            }
-
-        } catch (e: Exception) {
-            Log.e("EnforcementWorker", "Error during work execution", e)
-            return Result.failure()
+        } else {
+            // If usage is within the limit, turn off all punishments
+            RealityAccessibilityService.isGreyscaleActive.value = false
+            RealityAccessibilityService.isBlockActive.value = false
         }
 
-        Log.d("EnforcementWorker", "Worker finished.")
         return Result.success()
     }
 
-    private suspend fun applyPunishment(punishmentType: String, packageName: String) {
-         Log.d("EnforcementWorker", "Applying punishment $punishmentType for $packageName")
-        when (punishmentType) {
-            "GRAYSCALE" -> RealityAccessibilityService.isGreyscaleActive.value = true
-            "BLOCK" -> RealityAccessibilityService.isBlockActive.value = true
-        }
-        // Log the event
+    private suspend fun logPunishment(punishmentType: String, packageName: String) {
         repository.logHistoryEvent(
             HistoryEventEntity(
                 timestamp = System.currentTimeMillis(),
                 eventDescription = "Punishment '$punishmentType' triggered for $packageName."
             )
         )
-    }
-
-    private fun removePunishmentIfNeeded(punishmentType: String) {
-         Log.d("EnforcementWorker", "Removing punishment $punishmentType if active.")
-         when (punishmentType) {
-            "GRAYSCALE" -> if (RealityAccessibilityService.isGreyscaleActive.value) RealityAccessibilityService.isGreyscaleActive.value = false
-            "BLOCK" -> if (RealityAccessibilityService.isBlockActive.value) RealityAccessibilityService.isBlockActive.value = false
-        }
     }
 }
