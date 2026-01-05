@@ -12,6 +12,7 @@ import com.realityos.realityos.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow // THE MISSING IMPORT
 import kotlinx.coroutines.launch
 
 class RealityAccessibilityService : AccessibilityService() {
@@ -24,6 +25,7 @@ class RealityAccessibilityService : AccessibilityService() {
     private var blockView: android.view.View? = null
 
     companion object {
+        // These are now correctly defined because of the import
         val currentForegroundApp = MutableStateFlow<String?>(null)
         val isGreyscaleActive = MutableStateFlow(false)
         val isBlockActive = MutableStateFlow(false)
@@ -38,7 +40,10 @@ class RealityAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             event.packageName?.let {
-                currentForegroundApp.value = it.toString()
+                // Ignore our own app and the launcher
+                if(it.toString() != "com.realityos.realityos" && it.toString() != "com.google.android.apps.nexuslauncher") {
+                   currentForegroundApp.value = it.toString()
+                }
             }
         }
     }
@@ -75,28 +80,22 @@ class RealityAccessibilityService : AccessibilityService() {
             )
             params.gravity = Gravity.TOP or Gravity.START
 
-            // THIS IS THE CORRECTED BLOCK USING STRINGS
             Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer_enabled", 1)
-            Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer", 0) // Monochromacy
+            Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer", 0)
 
-            // Create a dummy view
             val layoutInflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
             grayscaleView = layoutInflater.inflate(R.layout.grayscale_overlay, null)
-
             windowManager.addView(grayscaleView, params)
         }
     }
 
-
     private fun hideGreyscaleOverlay() {
-        // Disable greyscale system setting
         Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer_enabled", 0)
-
         grayscaleView?.let {
             try {
                 windowManager.removeView(it)
             } catch (e: Exception) {
-                // Ignore if view is already gone
+                // View already gone
             }
             grayscaleView = null
         }
@@ -110,7 +109,7 @@ class RealityAccessibilityService : AccessibilityService() {
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                0, // No flags, it should intercept all touches
+                0,
                 PixelFormat.TRANSLUCENT
             )
             windowManager.addView(blockView, params)
@@ -122,16 +121,14 @@ class RealityAccessibilityService : AccessibilityService() {
             try {
                 windowManager.removeView(it)
             } catch (e: Exception) {
-                // Ignore if view is already gone
+                // View already gone
             }
             blockView = null
         }
     }
 
-
-    override fun onInterrupt() { }
-
-    override fun onConfigurationChanged(newConfig: Configuration) { }
+    override fun onInterrupt() {}
+    override fun onConfigurationChanged(newConfig: Configuration) {}
 
     override fun onDestroy() {
         super.onDestroy()
