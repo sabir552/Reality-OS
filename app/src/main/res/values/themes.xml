@@ -1,6 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-  <!-- Base application theme. -->
-  <style name="Theme.RealityOS" parent="Theme.Material3.Dark.NoActionBar">
-    <!-- All UI will be handled by Jetpack Compose from this point. -->
+  <!--
+    This is a final diagnostic test.
+    We are changing the parent theme to see if the build can find
+    any Material 3 theme, or if the problem is specific to the NoActionBar variant.
+  -->
+  <style name="Theme.RealityOS" parent="Theme.Material3.Dark">
   </style>
 </resources>
