@@ -78,9 +78,11 @@ fun QualifiedView(uiState: EliteUiState, onUnlockClick: () -> Unit) {
     Spacer(modifier = Modifier.height(24.dp))
     Button(
         onClick = onUnlockClick,
-        enabled = uiState.skuDetails != null,
+        enabled = uiState.productDetails != null,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(if (uiState.skuDetails != null) "UNLOCK ELITE (${uiState.skuDetails!!.price})" else "Loading Price...")
+        // THIS IS THE CORRECTED LINE - it now uses productDetails
+        val buttonText = uiState.productDetails?.oneTimePurchaseOfferDetails?.formattedPrice?.let { "UNLOCK ELITE ($it)" } ?: "Loading Price..."
+        Text(buttonText)
     }
 }
