@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.realityos.realityos.ui.AppViewModelProvider
 
+@OptIn(ExperimentalMaterial3Api::class) // THIS ANNOTATION IS NOW ADDED
 @Composable
 fun EliteLockedScreen(
     navController: NavController,
@@ -81,7 +82,6 @@ fun QualifiedView(uiState: EliteUiState, onUnlockClick: () -> Unit) {
         enabled = uiState.productDetails != null,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // THIS IS THE CORRECTED LINE - it now uses productDetails
         val buttonText = uiState.productDetails?.oneTimePurchaseOfferDetails?.formattedPrice?.let { "UNLOCK ELITE ($it)" } ?: "Loading Price..."
         Text(buttonText)
     }
