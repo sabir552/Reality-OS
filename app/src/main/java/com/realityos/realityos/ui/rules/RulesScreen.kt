@@ -3,6 +3,7 @@ package com.realityos.realityos.ui.rules
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions // THIS IMPORT IS NOW ADDED
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -98,7 +100,6 @@ fun AddRuleDialog(
         title = { Text("Create New Rule") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // App Selector
                 ExposedDropdownMenuBox(
                     expanded = appMenuExpanded,
                     onExpandedChange = { appMenuExpanded = !appMenuExpanded }
@@ -125,15 +126,13 @@ fun AddRuleDialog(
                         }
                     }
                 }
-                // Time Limit
                 OutlinedTextField(
                     value = timeLimit,
                     onValueChange = { timeLimit = it.filter { char -> char.isDigit() } },
                     label = { Text("Time Limit (minutes)") },
-                    keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
-                // Punishment Selector
                 ExposedDropdownMenuBox(
                     expanded = punishmentMenuExpanded,
                     onExpandedChange = { punishmentMenuExpanded = !punishmentMenuExpanded }
@@ -177,4 +176,3 @@ fun AddRuleDialog(
         }
     )
 }
-
