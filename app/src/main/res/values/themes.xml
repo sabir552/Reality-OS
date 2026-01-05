@@ -1,9 +1,6 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-  <!--
-    This is a final diagnostic test.
-    We are changing the parent theme to see if the build can find
-    any Material 3 theme, or if the problem is specific to the NoActionBar variant.
-  -->
-  <style name="Theme.RealityOS" parent="Theme.Material3.Dark">
-  </style>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- This is a basic theme for the splash screen and system bars.
+         The actual app theme is defined in code via Jetpack Compose. -->
+    <style name="Theme.RealityOS" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>
