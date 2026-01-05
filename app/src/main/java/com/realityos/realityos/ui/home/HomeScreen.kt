@@ -1,6 +1,5 @@
 package com.realityos.realityos.ui.home
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.realityos.realityos.ui.AppViewModelProvider
 
+@OptIn(ExperimentalMaterial3Api::class) // THIS ANNOTATION IS NOW ADDED
 @Composable
 fun HomeScreen(
     navController: NavController,
