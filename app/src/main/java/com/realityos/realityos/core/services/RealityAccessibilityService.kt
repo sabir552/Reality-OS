@@ -12,7 +12,7 @@ import com.realityos.realityos.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow // THE MISSING IMPORT
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 class RealityAccessibilityService : AccessibilityService() {
@@ -21,13 +21,12 @@ class RealityAccessibilityService : AccessibilityService() {
     private val scope = CoroutineScope(Dispatchers.Main + job)
 
     private lateinit var windowManager: WindowManager
-    private var grayscaleView: android.view.View? = null
     private var blockView: android.view.View? = null
 
     companion object {
-        // These are now correctly defined because of the import
         val currentForegroundApp = MutableStateFlow<String?>(null)
-        val isGreyscaleActive = MutableStateFlow(false)
+        // Greyscale feature is temporarily disabled to prevent crashing.
+        // val isGreyscaleActive = MutableStateFlow(false)
         val isBlockActive = MutableStateFlow(false)
     }
 
@@ -40,24 +39,17 @@ class RealityAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             event.packageName?.let {
-                // Ignore our own app and the launcher
-                if(it.toString() != "com.realityos.realityos" && it.toString() != "com.google.android.apps.nexuslauncher") {
-                   currentForegroundApp.value = it.toString()
+                // Ignore our own app and common launchers
+                val packageName = it.toString()
+                if(packageName != "com.realityos.realityos" && !packageName.contains("launcher")) {
+                   currentForegroundApp.value = packageName
                 }
             }
         }
     }
 
     private fun observePunishments() {
-        scope.launch {
-            isGreyscaleActive.collect { isActive ->
-                if (isActive) {
-                    showGreyscaleOverlay()
-                } else {
-                    hideGreyscaleOverlay()
-                }
-            }
-        }
+        // Greyscale observation is removed
         scope.launch {
             isBlockActive.collect { isActive ->
                 if (isActive) {
@@ -69,37 +61,17 @@ class RealityAccessibilityService : AccessibilityService() {
         }
     }
 
+    // --- GREYSCALE FUNCTIONALITY IS DISABLED TO PREVENT CRASH ---
+    // The previous method of using Settings.Secure.putInt is forbidden by Android
+    // and was causing a SecurityException crash.
     private fun showGreyscaleOverlay() {
-        if (grayscaleView == null) {
-            val params = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                PixelFormat.TRANSLUCENT
-            )
-            params.gravity = Gravity.TOP or Gravity.START
-
-            Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer_enabled", 1)
-            Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer", 0)
-
-            val layoutInflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            grayscaleView = layoutInflater.inflate(R.layout.grayscale_overlay, null)
-            windowManager.addView(grayscaleView, params)
-        }
+        // Do nothing for now to ensure stability.
     }
 
     private fun hideGreyscaleOverlay() {
-        Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer_enabled", 0)
-        grayscaleView?.let {
-            try {
-                windowManager.removeView(it)
-            } catch (e: Exception) {
-                // View already gone
-            }
-            grayscaleView = null
-        }
+        // Do nothing for now.
     }
+    // --- END OF DISABLED GREYSCALE ---
 
     private fun showBlockOverlay() {
         if (blockView == null) {
@@ -109,7 +81,7 @@ class RealityAccessibilityService : AccessibilityService() {
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                0,
+                0, // Intercept all touches
                 PixelFormat.TRANSLUCENT
             )
             windowManager.addView(blockView, params)
@@ -133,7 +105,6 @@ class RealityAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
-        hideGreyscaleOverlay()
         hideBlockOverlay()
     }
 }
