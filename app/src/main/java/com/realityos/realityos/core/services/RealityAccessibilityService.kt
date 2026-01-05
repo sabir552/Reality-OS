@@ -12,7 +12,6 @@ import com.realityos.realityos.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 class RealityAccessibilityService : AccessibilityService() {
@@ -67,9 +66,6 @@ class RealityAccessibilityService : AccessibilityService() {
 
     private fun showGreyscaleOverlay() {
         if (grayscaleView == null) {
-            val layoutInflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            grayscaleView = layoutInflater.inflate(R.layout.grayscale_overlay, null)
-
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -79,11 +75,13 @@ class RealityAccessibilityService : AccessibilityService() {
             )
             params.gravity = Gravity.TOP or Gravity.START
 
-            // This is the key for greyscale
-            val secureSettings = Settings.Secure.ACCESSIBILITY_DISPLAY_DALTONIZER_ENABLED
-            val daltonizerMode = Settings.Secure.ACCESSIBILITY_DISPLAY_DALTONIZER
-            Settings.Secure.putInt(contentResolver, secureSettings, 1)
-            Settings.Secure.putInt(contentResolver, daltonizerMode, 0) // Monochromacy
+            // THIS IS THE CORRECTED BLOCK USING STRINGS
+            Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer_enabled", 1)
+            Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer", 0) // Monochromacy
+
+            // Create a dummy view
+            val layoutInflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            grayscaleView = layoutInflater.inflate(R.layout.grayscale_overlay, null)
 
             windowManager.addView(grayscaleView, params)
         }
@@ -92,7 +90,7 @@ class RealityAccessibilityService : AccessibilityService() {
 
     private fun hideGreyscaleOverlay() {
         // Disable greyscale system setting
-        Settings.Secure.putInt(contentResolver, Settings.Secure.ACCESSIBILITY_DISPLAY_DALTONIZER_ENABLED, 0)
+        Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer_enabled", 0)
 
         grayscaleView?.let {
             try {
@@ -131,13 +129,9 @@ class RealityAccessibilityService : AccessibilityService() {
     }
 
 
-    override fun onInterrupt() {
-        // NO-OP
-    }
+    override fun onInterrupt() { }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        // Handle orientation changes if necessary
-    }
+    override fun onConfigurationChanged(newConfig: Configuration) { }
 
     override fun onDestroy() {
         super.onDestroy()
