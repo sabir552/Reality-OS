@@ -13,8 +13,9 @@ class RealityOSApplication : Application(), Configuration.Provider {
         container = AppDataContainer(this)
     }
 
-    override fun getWorkManagerConfiguration(): Configuration =
-        Configuration.Builder()
+    // THIS IS THE CORRECTED BLOCK
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
             .setMinimumLoggingLevel(android.util.Log.INFO)
             .build()
 }
