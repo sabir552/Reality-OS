@@ -23,12 +23,10 @@ class EnforcementWorker(
         Log.d("EnforcementWorker", "Worker starting...")
         val usageStatsManager = applicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         
-        // This is the current app the user is looking at
         val foregroundApp = RealityAccessibilityService.currentForegroundApp.value
 
-        // If no app is in the foreground, turn off all punishments and exit
+        // If no app is in the foreground, ensure blocking is off and exit
         if (foregroundApp == null) {
-            RealityAccessibilityService.isGreyscaleActive.value = false
             RealityAccessibilityService.isBlockActive.value = false
             return Result.success()
         }
@@ -36,9 +34,8 @@ class EnforcementWorker(
         // Get the specific rule for the foreground app, if it exists
         val ruleForApp = repository.getRules().first().find { it.targetAppPackageName == foregroundApp }
 
-        // If there's no rule for this app, turn off all punishments and exit
+        // If there's no rule for this app, ensure blocking is off and exit
         if (ruleForApp == null) {
-            RealityAccessibilityService.isGreyscaleActive.value = false
             RealityAccessibilityService.isBlockActive.value = false
             return Result.success()
         }
@@ -62,28 +59,14 @@ class EnforcementWorker(
 
         Log.d("EnforcementWorker", "Checking rule for $foregroundApp. Usage: $usageMinutes min. Limit: $timeLimitMinutes min.")
 
-        // If usage has exceeded the limit
-        if (usageMinutes >= timeLimitMinutes) {
-            // Apply the correct punishment and turn off the other one
-            when (ruleForApp.punishmentType) {
-                "GRAYSCALE" -> {
-                    if (!RealityAccessibilityService.isGreyscaleActive.value) {
-                        logPunishment("GRAYSCALE", foregroundApp)
-                    }
-                    RealityAccessibilityService.isGreyscaleActive.value = true
-                    RealityAccessibilityService.isBlockActive.value = false
-                }
-                "BLOCK" -> {
-                    if (!RealityAccessibilityService.isBlockActive.value) {
-                        logPunishment("BLOCK", foregroundApp)
-                    }
-                    RealityAccessibilityService.isBlockActive.value = true
-                    RealityAccessibilityService.isGreyscaleActive.value = false
-                }
+        // Check if usage has exceeded the limit and the punishment is BLOCK
+        if (usageMinutes >= timeLimitMinutes && ruleForApp.punishmentType == "BLOCK") {
+            if (!RealityAccessibilityService.isBlockActive.value) {
+                logPunishment("BLOCK", foregroundApp)
             }
+            RealityAccessibilityService.isBlockActive.value = true
         } else {
-            // If usage is within the limit, turn off all punishments
-            RealityAccessibilityService.isGreyscaleActive.value = false
+            // If usage is within limits OR the punishment type isn't BLOCK, turn blocking off
             RealityAccessibilityService.isBlockActive.value = false
         }
 
