@@ -1,14 +1,13 @@
 package com.realityos.realityos.core.services
 
 import android.accessibilityservice.AccessibilityService
-import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.PixelFormat
-import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
-import android.view.LayoutInflater
+import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
-import com.realityos.realityos.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,38 +19,40 @@ class RealityAccessibilityService : AccessibilityService() {
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + job)
 
-    private lateinit var windowManager: WindowManager
-    private var blockView: android.view.View? = null
+    private var windowManager: WindowManager? = null
+    private var blockView: View? = null
 
     companion object {
         val currentForegroundApp = MutableStateFlow<String?>(null)
-        // Greyscale feature is temporarily disabled to prevent crashing.
-        // val isGreyscaleActive = MutableStateFlow(false)
         val isBlockActive = MutableStateFlow(false)
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        observePunishments()
+        Log.d("RealityOS_Service", "Service Connected")
+        windowManager = getSystemService(WINDOW_SERVICE) as? WindowManager
+        if (windowManager == null) {
+            Log.e("RealityOS_Service", "FATAL: WindowManager is null.")
+            return
+        }
+        observeBlocker()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            event.packageName?.let {
-                // Ignore our own app and common launchers
-                val packageName = it.toString()
-                if(packageName != "com.realityos.realityos" && !packageName.contains("launcher")) {
-                   currentForegroundApp.value = packageName
+            event.packageName?.toString()?.let { packageName ->
+                if (packageName != application.packageName && !packageName.contains("launcher")) {
+                    currentForegroundApp.value = packageName
+                    Log.d("RealityOS_Service", "Foreground App: $packageName")
                 }
             }
         }
     }
 
-    private fun observePunishments() {
-        // Greyscale observation is removed
+    private fun observeBlocker() {
         scope.launch {
             isBlockActive.collect { isActive ->
+                Log.d("RealityOS_Service", "isBlockActive received: $isActive")
                 if (isActive) {
                     showBlockOverlay()
                 } else {
@@ -61,49 +62,53 @@ class RealityAccessibilityService : AccessibilityService() {
         }
     }
 
-    // --- GREYSCALE FUNCTIONALITY IS DISABLED TO PREVENT CRASH ---
-    // The previous method of using Settings.Secure.putInt is forbidden by Android
-    // and was causing a SecurityException crash.
-    private fun showGreyscaleOverlay() {
-        // Do nothing for now to ensure stability.
-    }
-
-    private fun hideGreyscaleOverlay() {
-        // Do nothing for now.
-    }
-    // --- END OF DISABLED GREYSCALE ---
-
     private fun showBlockOverlay() {
+        if (windowManager == null) {
+            Log.e("RealityOS_Service", "Cannot show overlay, WindowManager is null.")
+            return
+        }
         if (blockView == null) {
-            val layoutInflater = getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            blockView = layoutInflater.inflate(R.layout.block_overlay, null)
+            Log.d("RealityOS_Service", "Attempting to show block overlay...")
+            blockView = View(this).apply {
+                setBackgroundColor(Color.BLACK)
+            }
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                0, // Intercept all touches
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT
             )
-            windowManager.addView(blockView, params)
+            params.gravity = Gravity.CENTER
+            try {
+                windowManager?.addView(blockView, params)
+                Log.d("RealityOS_Service", "Block overlay added successfully.")
+            } catch (e: Exception) {
+                Log.e("RealityOS_Service", "Error adding block overlay view", e)
+            }
         }
     }
 
     private fun hideBlockOverlay() {
-        blockView?.let {
+        blockView?.let { view ->
+            Log.d("RealityOS_Service", "Attempting to hide block overlay...")
             try {
-                windowManager.removeView(it)
+                windowManager?.removeView(view)
+                Log.d("RealityOS_Service", "Block overlay removed successfully.")
             } catch (e: Exception) {
-                // View already gone
+                Log.e("RealityOS_Service", "Error removing block overlay view", e)
             }
             blockView = null
         }
     }
 
-    override fun onInterrupt() {}
-    override fun onConfigurationChanged(newConfig: Configuration) {}
+    override fun onInterrupt() {
+        Log.w("RealityOS_Service", "Service Interrupted")
+    }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d("RealityOS_Service", "Service Destroyed")
         job.cancel()
         hideBlockOverlay()
     }
