@@ -3,7 +3,7 @@ package com.realityos.realityos.ui.rules
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions // THIS IMPORT IS NOW ADDED
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.KeyboardType // THE MISSING IMPORT IS NOW ADDED
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -90,7 +90,8 @@ fun AddRuleDialog(
     val installedApps = remember { viewModel.getInstalledApps(context) }
     var selectedApp by remember { mutableStateOf<AppInfo?>(null) }
     var timeLimit by remember { mutableStateOf("30") }
-    var punishment by remember { mutableStateOf("GRAYSCALE") }
+    // Punishment now defaults to BLOCK
+    var punishment by remember { mutableStateOf("BLOCK") }
     var appMenuExpanded by remember { mutableStateOf(false) }
     var punishmentMenuExpanded by remember { mutableStateOf(false) }
 
@@ -130,6 +131,7 @@ fun AddRuleDialog(
                     value = timeLimit,
                     onValueChange = { timeLimit = it.filter { char -> char.isDigit() } },
                     label = { Text("Time Limit (minutes)") },
+                    // This line is now fully correct with the import
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
@@ -148,7 +150,7 @@ fun AddRuleDialog(
                         expanded = punishmentMenuExpanded,
                         onDismissRequest = { punishmentMenuExpanded = false }
                     ) {
-                        DropdownMenuItem(text = { Text("GRAYSCALE") }, onClick = { punishment = "GRAYSCALE"; punishmentMenuExpanded = false })
+                        // GRAYSCALE OPTION HAS BEEN REMOVED
                         DropdownMenuItem(text = { Text("BLOCK") }, onClick = { punishment = "BLOCK"; punishmentMenuExpanded = false })
                     }
                 }
